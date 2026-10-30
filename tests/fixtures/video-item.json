@@ -1,0 +1,24 @@
+{
+	"publication_object_id": "698f307f6c7fce219ef17553",
+	"id": "698f307f6c7fce219ef17553",
+	"title": "Часть 6. Аутсорсинг функций ревизора СНТ",
+	"text": "",
+	"share_link": "https://dzen.ru/video/watch/698f307f6c7fce219ef17553",
+	"image": "https://avatars.dzeninfra.ru/get-zen_doc/271828/pub_698f307f6c7fce219ef17553_698f37fe68435b576f78ca08/scale_1200",
+	"publication_date": "1770991970",
+	"item_type": "gif",
+	"video": {
+		"duration": 569,
+		"width": 3840,
+		"height": 2160,
+		"video_info": { "video_content_id": "oVkZ7nvkKAAA" },
+		"oneVideoStreams": [
+			{ "type": "hls", "url": "https://vd407.okcdn.ru/video.m3u8" },
+			{ "type": "lowest", "url": "https://vd407.okcdn.ru/lowest.mp4" },
+			{ "type": "low", "url": "https://vd407.okcdn.ru/low.mp4" },
+			{ "type": "medium", "url": "https://vd407.okcdn.ru/medium.mp4" },
+			{ "type": "high", "url": "https://vd407.okcdn.ru/high.mp4" }
+		],
+		"previews": { "852": "https://vd407.okcdn.ru/poster.jpg" }
+	}
+}

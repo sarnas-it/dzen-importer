@@ -54,8 +54,8 @@ class FeedClient {
 	 * @return array{items: array, more: string|null, channel_title: string}
 	 * @throws FeedException Если фид недоступен или вернул не JSON.
 	 */
-	public function page( $channel, $more_url = null ) {
-		$url = $more_url ? $more_url : self::feed_url( $channel );
+	public function page( $channel, $more_url = null, $tab = '' ) {
+		$url = $more_url ? $more_url : self::feed_url( $channel, $tab );
 
 		$body = $this->request( $url );
 		$data = json_decode( $body, true );
@@ -90,8 +90,14 @@ class FeedClient {
 	 * @param string $channel Слаг.
 	 * @return string
 	 */
-	public static function feed_url( $channel ) {
-		return self::FEED_URL . '?channel_name=' . rawurlencode( (string) $channel ) . '&country_code=ru&lang=ru';
+	public static function feed_url( $channel, $tab = '' ) {
+		$url = self::FEED_URL . '?channel_name=' . rawurlencode( (string) $channel ) . '&country_code=ru&lang=ru';
+
+		if ( '' !== $tab ) {
+			$url .= '&tab=' . rawurlencode( (string) $tab );
+		}
+
+		return $url;
 	}
 
 	/**
@@ -127,9 +133,33 @@ class FeedClient {
 
 		$type = isset( $raw['item_type'] ) ? strtolower( (string) $raw['item_type'] ) : '';
 		$card = isset( $raw['card_type'] ) ? strtolower( (string) $raw['card_type'] ) : '';
-		$is_video = false !== strpos( $type, 'video' ) || false !== strpos( $type, 'short' )
+		$is_video = 'gif' === $type || false !== strpos( $type, 'video' ) || false !== strpos( $type, 'short' )
 			|| false !== strpos( $card, 'video' ) || false !== strpos( $card, 'short' )
 			|| ! empty( $raw['video'] );
+
+		$video = array();
+
+		if ( $is_video && isset( $raw['video'] ) && is_array( $raw['video'] ) ) {
+			$raw_video = $raw['video'];
+
+			$streams = array();
+			if ( isset( $raw_video['oneVideoStreams'] ) && is_array( $raw_video['oneVideoStreams'] ) ) {
+				foreach ( $raw_video['oneVideoStreams'] as $stream ) {
+					if ( ! empty( $stream['type'] ) && ! empty( $stream['url'] ) ) {
+						$streams[ (string) $stream['type'] ] = (string) $stream['url'];
+					}
+				}
+			}
+
+			$video = array(
+				'embed_id' => isset( $raw_video['video_info']['video_content_id'] ) ? (string) $raw_video['video_info']['video_content_id'] : '',
+				'duration' => isset( $raw_video['duration'] ) ? (int) $raw_video['duration'] : 0,
+				'width'    => isset( $raw_video['width'] ) ? (int) $raw_video['width'] : 0,
+				'height'   => isset( $raw_video['height'] ) ? (int) $raw_video['height'] : 0,
+				'poster'   => isset( $raw_video['previews']['852'] ) ? (string) $raw_video['previews']['852'] : '',
+				'streams'  => $streams,
+			);
+		}
 
 		return array(
 			'id'       => $id,
@@ -139,6 +169,8 @@ class FeedClient {
 			'image'    => isset( $raw['image'] ) ? (string) $raw['image'] : '',
 			'ts'       => isset( $raw['publication_date'] ) ? (int) $raw['publication_date'] : 0,
 			'is_video' => $is_video,
+			'video'    => $video,
+			'type'     => $type,
 		);
 	}
 

@@ -185,8 +185,9 @@ class Admin {
 		self::notice(
 			'success',
 			sprintf(
-				'Готово: импортировано %d, пропущено %d, ошибок %d.',
+				'Готово: статей %d, видео %d, пропущено %d, ошибок %d.',
 				$result['imported'],
+				isset( $result['videos'] ) ? $result['videos']['imported'] : 0,
 				$result['skipped'],
 				$result['errors']
 			)
@@ -490,6 +491,39 @@ class Admin {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">Сейчас на сайте: <?php echo esc_html( isset( $seo_labels[ $detected ] ) ? $seo_labels[ $detected ] : $detected ); ?>.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Видео</th>
+						<td>
+							<label>
+								<input type="checkbox" name="import_videos" value="1" <?php checked( $settings['import_videos'], 1 ); ?> />
+								импортировать видео из вкладки «Видео» канала
+							</label>
+							<p class="dzen-field">
+								<label for="dzen-video-storage">Где хранить:</label>
+								<select id="dzen-video-storage" name="video_storage">
+									<option value="embed" <?php selected( $settings['video_storage'], 'embed' ); ?>>на Дзене (встроенный плеер)</option>
+									<option value="download" <?php selected( $settings['video_storage'], 'download' ); ?>>у нас в медиатеке (скачивать)</option>
+								</select>
+							</p>
+							<p class="description">Встроенный плеер не занимает место. Скачивание освобождает от Дзена, но ролики весят десятки мегабайт.</p>
+							<p class="dzen-field">
+								<label for="dzen-video-quality">Качество:</label>
+								<select id="dzen-video-quality" name="video_quality">
+									<option value="lowest" <?php selected( $settings['video_quality'], 'lowest' ); ?>>240p</option>
+									<option value="low" <?php selected( $settings['video_quality'], 'low' ); ?>>360p</option>
+									<option value="medium" <?php selected( $settings['video_quality'], 'medium' ); ?>>480p</option>
+									<option value="high" <?php selected( $settings['video_quality'], 'high' ); ?>>720p</option>
+									<option value="fullhd" <?php selected( $settings['video_quality'], 'fullhd' ); ?>>1080p</option>
+								</select>
+							</p>
+							<p class="dzen-field">
+								<label for="dzen-video-max">Лимит, МБ:</label>
+								<input type="number" id="dzen-video-max" min="1" max="4096" name="video_max_mb"
+									value="<?php echo (int) $settings['video_max_mb']; ?>" class="small-text" />
+							</p>
+							<p class="description">Если ролик больше лимита — он не скачивается, в лог пишется предупреждение, запись публикуется со встроенным плеером.</p>
 						</td>
 					</tr>
 					<tr>

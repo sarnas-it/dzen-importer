@@ -37,6 +37,10 @@ class Settings {
 			'source_text'         => 'Источник: Дзен',
 			'seo_plugin'          => 'auto',
 			'strip_cover'         => 0,
+			'import_videos'       => 1,
+			'video_storage'       => 'embed',
+			'video_quality'       => 'medium',
+			'video_max_mb'        => 200,
 			'max_per_run'         => 10,
 			'backfill_batch'      => 10,
 		);
@@ -85,6 +89,16 @@ class Settings {
 		$out['seo_plugin']   = in_array( $seo, self::SEO_PLUGINS, true ) ? $seo : 'auto';
 
 		$out['strip_cover'] = empty( $input['strip_cover'] ) ? 0 : 1;
+
+		$out['import_videos'] = empty( $input['import_videos'] ) ? 0 : 1;
+
+		$storage              = isset( $input['video_storage'] ) ? (string) $input['video_storage'] : 'embed';
+		$out['video_storage'] = in_array( $storage, array( 'embed', 'download' ), true ) ? $storage : 'embed';
+
+		$quality              = isset( $input['video_quality'] ) ? (string) $input['video_quality'] : 'medium';
+		$out['video_quality'] = in_array( $quality, array( 'lowest', 'low', 'medium', 'high', 'fullhd' ), true ) ? $quality : 'medium';
+
+		$out['video_max_mb'] = max( 1, min( 4096, isset( $input['video_max_mb'] ) ? (int) $input['video_max_mb'] : 200 ) );
 
 		$out['max_per_run']    = max( 1, min( 50, isset( $input['max_per_run'] ) ? (int) $input['max_per_run'] : 10 ) );
 		$out['backfill_batch'] = max( 1, min( 50, isset( $input['backfill_batch'] ) ? (int) $input['backfill_batch'] : 10 ) );

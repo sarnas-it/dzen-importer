@@ -299,6 +299,190 @@ class Importer {
 	}
 
 	/**
+	 * Импортирует видео.
+	 *
+	 * @param array $item     Элемент фида вкладки longs.
+	 * @param array $settings Настройки.
+	 * @return int|\WP_Error
+	 */
+	public function import_video( array $item, array $settings ) {
+		$publication_id = isset( $item['id'] ) ? (string) $item['id'] : '';
+
+		if ( '' === $publication_id ) {
+			return new \WP_Error( 'dzen_no_id', 'У видео нет ID.' );
+		}
+
+		if ( self::already_imported( $publication_id ) ) {
+			return 0;
+		}
+
+		$video = isset( $item['video'] ) && is_array( $item['video'] ) ? $item['video'] : array();
+
+		if ( empty( $video['embed_id'] ) && empty( $video['streams'] ) ) {
+			return new \WP_Error( 'dzen_video_meta', 'Дзен не отдал данные плеера.' );
+		}
+
+		$page = array(
+			'title'       => '',
+			'description' => '',
+			'image'       => '',
+		);
+
+		try {
+			$page = ArticleParser::parse_video( Http::get( $item['url'], Http::CRAWLER_UA, 30, $this->http ) );
+		} catch ( HttpException $e ) {
+			Logger::log( 'warning', 'Видео: не удалось прочитать страницу — ' . $e->getMessage() );
+		}
+
+		$title = '' !== $item['title'] ? $item['title'] : $page['title'];
+		$desc  = '' !== $page['description'] ? $page['description'] : Text::description( $item['teaser'], 300 );
+		$cover = '' !== $page['image'] ? $page['image'] : $item['image'];
+
+		$cover_id  = $cover ? Media::import( $cover, 0, $title ) : 0;
+		$cover_url = $cover_id ? (string) wp_get_attachment_url( $cover_id ) : '';
+
+		$video_id  = 0;
+		$video_url = '';
+
+		if ( isset( $settings['video_storage'] ) && 'download' === $settings['video_storage'] ) {
+			$stream = self::pick_stream( isset( $video['streams'] ) ? $video['streams'] : array(), isset( $settings['video_quality'] ) ? $settings['video_quality'] : 'medium' );
+
+			if ( '' !== $stream ) {
+				$video_id = Media::import_video( $stream, 0, $title, isset( $settings['video_max_mb'] ) ? (int) $settings['video_max_mb'] : 200 );
+
+				if ( $video_id ) {
+					$video_url = (string) wp_get_attachment_url( $video_id );
+				}
+			}
+		}
+
+		$content = self::build_video_content( $item, $settings, $desc, $video, $cover_url, $video_url );
+
+		$post_id = wp_insert_post(
+			array(
+				'post_type'     => 'post',
+				'post_status'   => isset( $settings['post_status'] ) && 'publish' === $settings['post_status'] ? 'publish' : 'draft',
+				'post_title'    => $title,
+				'post_name'     => Text::slug( $title, 'dzen-video-' . $publication_id ),
+				'post_content'  => $content,
+				'post_excerpt'  => $desc,
+				'post_date'     => get_date_from_gmt( gmdate( 'Y-m-d H:i:s', (int) $item['ts'] ) ),
+				'post_author'   => self::author_id( $settings ),
+				'post_category' => self::categories( $settings ),
+				'meta_input'    => array(
+					self::META_ID       => $publication_id,
+					self::META_URL      => (string) $item['url'],
+					self::META_IMPORTED => time(),
+					'_dzen_media_type'  => 'video',
+					'_dzen_duration'    => isset( $video['duration'] ) ? (int) $video['duration'] : 0,
+				),
+			),
+			true
+		);
+
+		if ( is_wp_error( $post_id ) ) {
+			$video_id && wp_delete_attachment( $video_id, true );
+
+			return $post_id;
+		}
+
+		$post_id = (int) $post_id;
+
+		if ( $cover_id ) {
+			set_post_thumbnail( $post_id, $cover_id );
+			wp_update_post(
+				array(
+					'ID'          => $cover_id,
+					'post_parent' => $post_id,
+				)
+			);
+		}
+
+		if ( $video_id ) {
+			wp_update_post(
+				array(
+					'ID'          => $video_id,
+					'post_parent' => $post_id,
+				)
+			);
+		}
+
+		Seo::apply(
+			$post_id,
+			array(
+				'title'       => $title,
+				'description' => $desc,
+				'keyword'     => $title,
+			)
+		);
+
+		Logger::log( 'info', sprintf( 'Импортировано видео «%s» (%s)', $title, $item['url'] ) );
+
+		return $post_id;
+	}
+
+	/**
+	 * Собирает HTML видео-записи.
+	 *
+	 * @param array  $item      Элемент фида.
+	 * @param array  $settings  Настройки.
+	 * @param string $desc      Описание.
+	 * @param array  $video     Данные видео.
+	 * @param string $cover_url Локальная обложка.
+	 * @param string $video_url Локальный MP4.
+	 * @return string
+	 */
+	public static function build_video_content( array $item, array $settings, $desc, array $video, $cover_url, $video_url ) {
+		$parts = array();
+
+		if ( '' !== $video_url ) {
+			$poster = '' !== $cover_url ? ' poster="' . esc_url( $cover_url ) . '"' : '';
+			$parts[] = '<figure class="wp-block-video"><video controls preload="metadata"' . $poster . '>'
+				. '<source src="' . esc_url( $video_url ) . '" type="video/mp4" /></video></figure>';
+		} elseif ( ! empty( $video['embed_id'] ) ) {
+			$parts[] = '<figure class="wp-block-embed is-type-video is-provider-dzen"><div class="wp-block-embed__wrapper">'
+				. '<iframe src="https://dzen.ru/embed/' . esc_attr( $video['embed_id'] ) . '" width="640" height="360"'
+				. ' frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>'
+				. '</div></figure>';
+		}
+
+		if ( '' !== $desc ) {
+			$parts[] = '<p>' . esc_html( $desc ) . '</p>';
+		}
+
+		$content = implode( "\n", $parts );
+
+		if ( ! empty( $settings['source_link'] ) && ! empty( $item['url'] ) ) {
+			$rel  = ! empty( $settings['source_link_nofollow'] ) ? ' rel="nofollow noopener"' : ' rel="noopener"';
+			$text = isset( $settings['source_text'] ) && '' !== $settings['source_text'] ? $settings['source_text'] : 'Источник: Дзен';
+
+			$content .= "\n" . '<p class="dzen-importer-source"><a href="' . esc_url( $item['url'] ) . '"'
+				. $rel . ' target="_blank">' . esc_html( $text ) . '</a></p>';
+		}
+
+		return wp_kses( $content, self::allowed_video_tags() );
+	}
+
+	/**
+	 * Выбирает поток нужного качества.
+	 *
+	 * @param array  $streams Потоки type => url.
+	 * @param string $quality Желаемое качество.
+	 * @return string
+	 */
+	public static function pick_stream( array $streams, $quality ) {
+		$order = array( $quality, 'medium', 'low', 'lowest', 'high', 'fullhd', 'tiny' );
+
+		foreach ( array_unique( $order ) as $candidate ) {
+			if ( ! empty( $streams[ $candidate ] ) ) {
+				return (string) $streams[ $candidate ];
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Белый список тегов для тела записи.
 	 *
 	 * @return array
@@ -313,7 +497,7 @@ class Importer {
 			'ol'         => array(),
 			'li'         => array(),
 			'blockquote' => array(),
-			'figure'     => array(),
+			'figure'     => array( 'class' => true ),
 			'figcaption' => array(),
 			'br'         => array(),
 			'hr'         => array(),
@@ -336,6 +520,45 @@ class Importer {
 				'loading' => true,
 			),
 		);
+	}
+
+	/**
+	 * Белый список тегов для видео-записи.
+	 *
+	 * @return array
+	 */
+	public static function allowed_video_tags() {
+		$tags = self::allowed_tags();
+
+		$tags['div'] = array( 'class' => true );
+
+		$tags['iframe'] = array(
+			'src'             => true,
+			'width'           => true,
+			'height'          => true,
+			'frameborder'     => true,
+			'allowfullscreen' => true,
+			'allow'           => true,
+			'loading'         => true,
+			'title'           => true,
+		);
+
+		$tags['video'] = array(
+			'controls'    => true,
+			'preload'     => true,
+			'poster'      => true,
+			'width'       => true,
+			'height'      => true,
+			'playsinline' => true,
+			'class'       => true,
+		);
+
+		$tags['source'] = array(
+			'src'  => true,
+			'type' => true,
+		);
+
+		return $tags;
 	}
 
 	/**

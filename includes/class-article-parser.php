@@ -217,6 +217,63 @@ class ArticleParser {
 	}
 
 	/**
+	 * Разбирает страницу видео: заголовок, описание, обложка.
+	 *
+	 * @param string $html HTML страницы.
+	 * @return array{title: string, description: string, image: string}
+	 */
+	public static function parse_video( $html ) {
+		$result = array(
+			'title'       => '',
+			'description' => '',
+			'image'       => '',
+		);
+
+		$html = (string) $html;
+		if ( '' === trim( $html ) ) {
+			return $result;
+		}
+
+		$title = self::meta_content( $html, 'og:title' );
+		$title = preg_replace( '~\s*\|\s*Дзен\s*$~u', '', (string) $title );
+		$title = preg_replace( '~\s*\|[^|]*$~u', '', (string) $title );
+
+		$desc = self::meta_content( $html, 'og:description' );
+		if ( '' === $desc ) {
+			$desc = self::meta_content( $html, 'description' );
+		}
+
+		$desc = preg_replace( '~^Видео автора\s+«[^»]*»\s+в Дзене\s*\S*:?\s*~u', '', $desc );
+
+		$result['title']       = trim( (string) $title );
+		$result['description'] = trim( (string) $desc );
+		$result['image']       = self::meta_content( $html, 'og:image' );
+
+		return $result;
+	}
+
+	/**
+	 * Достаёт content мета-тега без DOM-разбора.
+	 *
+	 * @param string $html  HTML.
+	 * @param string $name  Имя свойства/тега.
+	 * @return string
+	 */
+	private static function meta_content( $html, $name ) {
+		$name = preg_quote( $name, '~' );
+
+		if ( preg_match( '~<meta[^>]+(?:property|name)="' . $name . '"[^>]+content="([^"]*)"~i', $html, $m ) ) {
+			return html_entity_decode( $m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
+
+		if ( preg_match( '~<meta[^>]+content="([^"]*)"[^>]+(?:property|name)="' . $name . '"~i', $html, $m ) ) {
+			return html_entity_decode( $m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
+
+		return '';
+	}
+
+	/**
 	 * Текст первого найденного узла.
 	 *
 	 * @param \DOMXPath $xpath XPath.

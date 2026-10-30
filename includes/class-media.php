@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Media {
 
 	const META = '_dzen_source_image';
+	const META_VIDEO = '_dzen_source_video';
 
 	/**
 	 * Импортирует картинку.
@@ -77,12 +78,80 @@ class Media {
 	}
 
 	/**
-	 * Ищет уже загруженное вложение по исходному URL.
+	 * Скачивает видео в медиатеку.
 	 *
-	 * @param string $url URL.
+	 * @param string $url     Прямая ссылка на MP4.
+	 * @param int    $post_id ID записи.
+	 * @param string $alt     Подпись.
+	 * @param int    $max_mb  Максимальный размер, МБ.
+	 * @return int ID вложения или 0.
+	 */
+	public static function import_video( $url, $post_id, $alt, $max_mb ) {
+		$url = trim( (string) $url );
+
+		if ( '' === $url ) {
+			return 0;
+		}
+
+		$existing = self::find_by_meta( self::META_VIDEO, $url );
+		if ( $existing ) {
+			return $existing;
+		}
+
+		$head = wp_remote_head( $url, array( 'timeout' => 20 ) );
+
+		if ( ! is_wp_error( $head ) ) {
+			$length = (int) wp_remote_retrieve_header( $head, 'content-length' );
+
+			if ( $length > 0 && $length > $max_mb * MB_IN_BYTES ) {
+				Logger::log(
+					'warning',
+					sprintf( 'Видео пропущено: %.0f МБ больше лимита %d МБ (%s)', $length / MB_IN_BYTES, $max_mb, $url )
+				);
+
+				return 0;
+			}
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$tmp = download_url( $url, 300 );
+
+		if ( is_wp_error( $tmp ) ) {
+			Logger::log( 'warning', 'Не удалось скачать видео ' . $url . ': ' . $tmp->get_error_message() );
+
+			return 0;
+		}
+
+		$file = array(
+			'name'     => 'dzen-video-' . substr( md5( $url ), 0, 12 ) . '.mp4',
+			'tmp_name' => $tmp,
+		);
+
+		$attachment_id = media_handle_sideload( $file, $post_id, $alt );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			wp_delete_file( $tmp );
+			Logger::log( 'warning', 'Не удалось добавить видео ' . $url . ': ' . $attachment_id->get_error_message() );
+
+			return 0;
+		}
+
+		update_post_meta( $attachment_id, self::META_VIDEO, $url );
+
+		return (int) $attachment_id;
+	}
+
+	/**
+	 * Ищет вложение по произвольному мета-ключу.
+	 *
+	 * @param string $meta_key Ключ.
+	 * @param string $value    Значение.
 	 * @return int
 	 */
-	public static function find_by_url( $url ) {
+	private static function find_by_meta( $meta_key, $value ) {
 		$found = get_posts(
 			array(
 				'post_type'      => 'attachment',
@@ -92,14 +161,24 @@ class Media {
 				'no_found_rows'  => true,
 				'meta_query'     => array(
 					array(
-						'key'   => self::META,
-						'value' => $url,
+						'key'   => $meta_key,
+						'value' => $value,
 					),
 				),
 			)
 		);
 
 		return $found ? (int) $found[0] : 0;
+	}
+
+	/**
+	 * Ищет уже загруженное вложение по исходному URL.
+	 *
+	 * @param string $url URL.
+	 * @return int
+	 */
+	public static function find_by_url( $url ) {
+		return self::find_by_meta( self::META, $url );
 	}
 
 	/**

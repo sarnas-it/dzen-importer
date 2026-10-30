@@ -179,11 +179,116 @@ class Sync {
 		$state['last_run'] = time();
 		State::save( $state );
 
+		$videos = array(
+			'imported' => 0,
+			'skipped'  => 0,
+			'errors'   => 0,
+		);
+
+		if ( ! empty( $settings['import_videos'] ) ) {
+			$videos = self::do_videos( $settings, $client, $importer );
+		}
+
 		return array(
 			'imported' => $imported,
 			'skipped'  => $skipped,
 			'errors'   => $errors,
 			'pages'    => $pages,
+			'videos'   => $videos,
+		);
+	}
+
+	/**
+	 * Импортирует видео из вкладки longs.
+	 *
+	 * @param array         $settings Настройки.
+	 * @param FeedClient    $client   Клиент.
+	 * @param Importer      $importer Импортёр.
+	 * @return array
+	 */
+	private static function do_videos( array $settings, $client, $importer ) {
+		$max       = max( 1, (int) $settings['max_per_run'] );
+		$collected = array();
+		$pages     = 0;
+
+		try {
+			$page = $client->page( $settings['channel'], null, 'longs' );
+		} catch ( FeedException $e ) {
+			Logger::log( 'error', 'Видео: фид недоступен — ' . $e->getMessage() );
+
+			return array(
+				'imported' => 0,
+				'skipped'  => 0,
+				'errors'   => 1,
+			);
+		}
+
+		do {
+			$pages++;
+
+			foreach ( $page['items'] as $item ) {
+				if ( empty( $item['is_video'] ) ) {
+					continue;
+				}
+
+				$id = (string) $item['id'];
+
+				if ( isset( $collected[ $id ] ) || $importer->already_imported( $id ) ) {
+					continue;
+				}
+
+				$collected[ $id ] = $item;
+
+				if ( count( $collected ) >= $max ) {
+					break 2;
+				}
+			}
+
+			if ( empty( $page['more'] ) || $pages >= self::MAX_PAGES ) {
+				break;
+			}
+
+			try {
+				$page = $client->page( $settings['channel'], $page['more'], 'longs' );
+			} catch ( FeedException $e ) {
+				break;
+			}
+		} while ( true );
+
+		$imported = 0;
+		$skipped  = 0;
+		$errors   = 0;
+
+		foreach ( $collected as $item ) {
+			$result = $importer->import_video( $item, $settings );
+
+			if ( is_wp_error( $result ) ) {
+				$errors++;
+				Logger::log( 'error', sprintf( 'Видео «%s»: %s', $item['title'], $result->get_error_message() ) );
+				continue;
+			}
+
+			if ( $result > 0 ) {
+				$imported++;
+			} else {
+				$skipped++;
+			}
+
+			usleep( 500000 );
+		}
+
+		if ( $imported > 0 || $errors > 0 ) {
+			$state = State::get();
+			$state['imported_total'] = (int) $state['imported_total'] + $imported;
+			State::save( $state );
+
+			Logger::log( 'info', sprintf( 'Видео: импортировано %d, пропущено %d, ошибок %d.', $imported, $skipped, $errors ) );
+		}
+
+		return array(
+			'imported' => $imported,
+			'skipped'  => $skipped,
+			'errors'   => $errors,
 		);
 	}
 
