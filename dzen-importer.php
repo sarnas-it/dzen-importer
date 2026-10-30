@@ -3,7 +3,7 @@
  * Plugin Name:       Dzen Importer
  * Plugin URI:        https://github.com/sarnas-it/dzen-importer
  * Description:       Импорт публикаций из канала Дзен в WordPress: полный текст, картинки, SEO-поля.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Sarnas
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DZEN_IMPORTER_VERSION', '0.1.0' );
+define( 'DZEN_IMPORTER_VERSION', '0.2.0' );
 define( 'DZEN_IMPORTER_FILE', __FILE__ );
 define( 'DZEN_IMPORTER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DZEN_IMPORTER_URL', plugin_dir_url( __FILE__ ) );

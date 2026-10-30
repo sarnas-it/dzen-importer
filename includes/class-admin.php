@@ -523,7 +523,15 @@ class Admin {
 								<input type="number" id="dzen-video-max" min="1" max="4096" name="video_max_mb"
 									value="<?php echo (int) $settings['video_max_mb']; ?>" class="small-text" />
 							</p>
-							<p class="description">Если ролик больше лимита — он не скачивается, в лог пишется предупреждение, запись публикуется со встроенным плеером.</p>
+							<p class="description">Если ролик больше лимита — он не скачивается, в лог пишется предупреждение, запись выходит со встроенным плеером.</p>
+							<p class="dzen-field">
+								<label for="dzen-video-date">Дата видео:</label>
+								<select id="dzen-video-date" name="video_date">
+									<option value="import" <?php selected( $settings['video_date'], 'import' ); ?>>дата импорта (сразу видно в блоге)</option>
+									<option value="original" <?php selected( $settings['video_date'], 'original' ); ?>>оригинальная дата Дзена</option>
+								</select>
+							</p>
+							<p class="description">У видео на Дзене даты старые (год и больше назад), поэтому с оригинальной датой они уходят в архив и не видны в списке новых материалов.</p>
 						</td>
 					</tr>
 					<tr>

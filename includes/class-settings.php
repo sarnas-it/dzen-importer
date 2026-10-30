@@ -41,6 +41,7 @@ class Settings {
 			'video_storage'       => 'embed',
 			'video_quality'       => 'medium',
 			'video_max_mb'        => 200,
+			'video_date'          => 'import',
 			'max_per_run'         => 10,
 			'backfill_batch'      => 10,
 		);
@@ -99,6 +100,9 @@ class Settings {
 		$out['video_quality'] = in_array( $quality, array( 'lowest', 'low', 'medium', 'high', 'fullhd' ), true ) ? $quality : 'medium';
 
 		$out['video_max_mb'] = max( 1, min( 4096, isset( $input['video_max_mb'] ) ? (int) $input['video_max_mb'] : 200 ) );
+
+		$video_date        = isset( $input['video_date'] ) ? (string) $input['video_date'] : 'import';
+		$out['video_date'] = in_array( $video_date, array( 'import', 'original' ), true ) ? $video_date : 'import';
 
 		$out['max_per_run']    = max( 1, min( 50, isset( $input['max_per_run'] ) ? (int) $input['max_per_run'] : 10 ) );
 		$out['backfill_batch'] = max( 1, min( 50, isset( $input['backfill_batch'] ) ? (int) $input['backfill_batch'] : 10 ) );

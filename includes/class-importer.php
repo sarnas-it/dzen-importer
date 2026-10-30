@@ -358,6 +358,8 @@ class Importer {
 
 		$content = self::build_video_content( $item, $settings, $desc, $video, $cover_url, $video_url );
 
+		$date_ts = ( isset( $settings['video_date'] ) && 'original' === $settings['video_date'] ) ? (int) $item['ts'] : time();
+
 		$post_id = wp_insert_post(
 			array(
 				'post_type'     => 'post',
@@ -366,7 +368,7 @@ class Importer {
 				'post_name'     => Text::slug( $title, 'dzen-video-' . $publication_id ),
 				'post_content'  => $content,
 				'post_excerpt'  => $desc,
-				'post_date'     => get_date_from_gmt( gmdate( 'Y-m-d H:i:s', (int) $item['ts'] ) ),
+				'post_date'     => get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $date_ts ) ),
 				'post_author'   => self::author_id( $settings ),
 				'post_category' => self::categories( $settings ),
 				'meta_input'    => array(
@@ -375,6 +377,7 @@ class Importer {
 					self::META_IMPORTED => time(),
 					'_dzen_media_type'  => 'video',
 					'_dzen_duration'    => isset( $video['duration'] ) ? (int) $video['duration'] : 0,
+					'_dzen_published_at' => (int) $item['ts'],
 				),
 			),
 			true
