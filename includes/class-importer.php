@@ -106,8 +106,8 @@ class Importer {
 
 		$content = self::build_content( $parsed['html'], $images_map, $settings, $item );
 
-		// Обложка статьи уходит в миниатюру — убираем её дубль из начала текста.
-		if ( ! empty( $parsed['images'][0] ) && ! empty( $images_map[ $parsed['images'][0] ] ) ) {
+		// Обложка статьи уходит в миниатюру — при желании убираем её дубль из начала текста.
+		if ( ! empty( $settings['strip_cover'] ) && ! empty( $parsed['images'][0] ) && ! empty( $images_map[ $parsed['images'][0] ] ) ) {
 			$content = self::strip_leading_image( $content, $images_map[ $parsed['images'][0] ] );
 		}
 

@@ -469,6 +469,11 @@ class Admin {
 								<input type="text" class="regular-text" name="source_text"
 									value="<?php echo esc_attr( $settings['source_text'] ); ?>" />
 							</p>
+							<label>
+								<input type="checkbox" name="strip_cover" value="1" <?php checked( $settings['strip_cover'], 1 ); ?> />
+								убирать обложку из начала текста, если она поставлена миниатюрой
+							</label>
+							<p class="description">Включайте, если тема показывает миниатюру на странице записи — иначе обложка будет дважды.</p>
 						</td>
 					</tr>
 					<tr>

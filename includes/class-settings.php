@@ -36,6 +36,7 @@ class Settings {
 			'source_link_nofollow' => 1,
 			'source_text'         => 'Источник: Дзен',
 			'seo_plugin'          => 'auto',
+			'strip_cover'         => 0,
 			'max_per_run'         => 10,
 			'backfill_batch'      => 10,
 		);
@@ -82,6 +83,8 @@ class Settings {
 
 		$seo                 = isset( $input['seo_plugin'] ) ? (string) $input['seo_plugin'] : 'auto';
 		$out['seo_plugin']   = in_array( $seo, self::SEO_PLUGINS, true ) ? $seo : 'auto';
+
+		$out['strip_cover'] = empty( $input['strip_cover'] ) ? 0 : 1;
 
 		$out['max_per_run']    = max( 1, min( 50, isset( $input['max_per_run'] ) ? (int) $input['max_per_run'] : 10 ) );
 		$out['backfill_batch'] = max( 1, min( 50, isset( $input['backfill_batch'] ) ? (int) $input['backfill_batch'] : 10 ) );
