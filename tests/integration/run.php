@@ -102,7 +102,8 @@ if ( is_int( $post_id ) && $post_id > 0 ) {
 	preg_match_all( '~class="([^"]*)"~', $post->post_content, $classes );
 	$classes = array_unique( $classes[1] );
 	dzen_check( 'классы вырезаны', array( 'dzen-importer-source' ) === array_values( $classes ), implode( ',', $classes ) );
-	dzen_check( 'картинки локальные', false !== strpos( $post->post_content, wp_upload_dir()['baseurl'] ) );
+	dzen_check( 'нет внешних картинок', false === strpos( $post->post_content, 'avatars.dzeninfra.ru' ) );
+	dzen_check( 'миниатюра локальная', get_post_thumbnail_id( $post_id ) && 0 === strpos( (string) wp_get_attachment_url( get_post_thumbnail_id( $post_id ) ), wp_upload_dir()['baseurl'] ) );
 	dzen_check( 'заголовки сохранены', false !== strpos( $post->post_content, '<h2>' ) );
 	dzen_check( 'миниатюра есть', get_post_thumbnail_id( $post_id ) > 0 );
 	dzen_check( 'meta id', get_post_meta( $post_id, '_dzen_publication_id', true ) === $item['id'] );

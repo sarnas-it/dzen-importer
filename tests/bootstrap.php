@@ -61,3 +61,4 @@ require_once dirname( __DIR__ ) . '/includes/class-text.php';
 require_once dirname( __DIR__ ) . '/includes/class-http.php';
 require_once dirname( __DIR__ ) . '/includes/class-feed-client.php';
 require_once dirname( __DIR__ ) . '/includes/class-article-parser.php';
+require_once dirname( __DIR__ ) . '/includes/class-importer.php';

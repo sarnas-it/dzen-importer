@@ -104,13 +104,20 @@ class Importer {
 		// Картинки качаем до создания записи: wp_update_post сбрасывает дату у черновика.
 		$images_map = $this->import_images( $parsed['images'], 0, $title );
 
+		$content = self::build_content( $parsed['html'], $images_map, $settings, $item );
+
+		// Обложка статьи уходит в миниатюру — убираем её дубль из начала текста.
+		if ( ! empty( $parsed['images'][0] ) && ! empty( $images_map[ $parsed['images'][0] ] ) ) {
+			$content = self::strip_leading_image( $content, $images_map[ $parsed['images'][0] ] );
+		}
+
 		$post_id = wp_insert_post(
 			array(
 				'post_type'     => 'post',
 				'post_status'   => isset( $settings['post_status'] ) && 'publish' === $settings['post_status'] ? 'publish' : 'draft',
 				'post_title'    => $title,
 				'post_name'     => Text::slug( $title, 'dzen-' . $publication_id ),
-				'post_content'  => self::build_content( $parsed['html'], $images_map, $settings, $item ),
+				'post_content'  => $content,
 				'post_excerpt'  => $desc,
 				'post_date'     => get_date_from_gmt( gmdate( 'Y-m-d H:i:s', (int) $item['ts'] ) ),
 				'post_author'   => self::author_id( $settings ),
@@ -209,16 +216,18 @@ class Importer {
 	private function set_thumbnail( $post_id, array $parsed, array $item, $title ) {
 		$candidates = array();
 
-		if ( ! empty( $parsed['og_image'] ) ) {
-			$candidates[] = $parsed['og_image'];
-		}
-
+		// Сначала настоящая обложка статьи, потом обложка из фида, и только затем
+		// сгенерированная OG-картинка Дзена (на ней впечатан заголовок).
 		if ( ! empty( $parsed['images'] ) ) {
 			$candidates[] = $parsed['images'][0];
 		}
 
 		if ( ! empty( $item['image'] ) ) {
 			$candidates[] = $item['image'];
+		}
+
+		if ( ! empty( $parsed['og_image'] ) ) {
+			$candidates[] = $parsed['og_image'];
 		}
 
 		foreach ( array_unique( $candidates ) as $url ) {
@@ -262,6 +271,31 @@ class Importer {
 		}
 
 		return wp_kses( $content, self::allowed_tags() );
+	}
+
+	/**
+	 * Убирает ведущую картинку, если она же стала миниатюрой.
+	 *
+	 * @param string $html HTML записи.
+	 * @param string $url  Локальный URL миниатюры.
+	 * @return string
+	 */
+	public static function strip_leading_image( $html, $url ) {
+		$html = (string) $html;
+		$url  = (string) $url;
+
+		if ( '' === $url ) {
+			return $html;
+		}
+
+		if ( preg_match( '~^\s*<figure[^>]*>.*?</figure>~s', $html, $match )
+			&& false !== strpos( $match[0], 'src="' . esc_attr_pure( $url ) . '"' ) ) {
+			return (string) preg_replace( '~^\s*<figure[^>]*>.*?</figure>~s', '', $html, 1 );
+		}
+
+		$pattern = '~^\s*<img[^>]*src="' . preg_quote( esc_attr_pure( $url ), '~' ) . '"[^>]*/?>~';
+
+		return (string) preg_replace( $pattern, '', $html, 1 );
 	}
 
 	/**
