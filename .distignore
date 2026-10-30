@@ -1,0 +1,12 @@
+/.git
+/.github
+/docs
+/tests
+/vendor
+/composer.json
+/composer.lock
+/phpunit.xml
+/docker-compose.yml
+/.gitignore
+/.distignore
+/README.md

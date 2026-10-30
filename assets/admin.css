@@ -1,0 +1,26 @@
+.dzen-importer .dzen-status,
+.dzen-importer .dzen-settings,
+.dzen-importer .dzen-actions {
+	max-width: 960px;
+}
+
+.dzen-importer .dzen-inline {
+	display: inline-block;
+	margin: 0 8px 8px 0;
+}
+
+.dzen-importer .dzen-error {
+	color: #b32d2e;
+}
+
+.dzen-importer .dzen-log td {
+	vertical-align: top;
+}
+
+.dzen-importer .dzen-log-error td {
+	color: #b32d2e;
+}
+
+.dzen-importer .dzen-log-warning td {
+	color: #996800;
+}
