@@ -495,11 +495,16 @@ class Admin {
 					<tr>
 						<th scope="row">Порции</th>
 						<td>
-							<label>за запуск: <input type="number" min="1" max="50" name="max_per_run"
-								value="<?php echo (int) $settings['max_per_run']; ?>" class="small-text" /></label>
-							<br />
-							<label>догрузка старых: <input type="number" min="1" max="50" name="backfill_batch"
-								value="<?php echo (int) $settings['backfill_batch']; ?>" class="small-text" /></label>
+							<p class="dzen-field">
+								<label for="dzen-max-per-run">За запуск:</label>
+								<input type="number" id="dzen-max-per-run" min="1" max="50" name="max_per_run"
+									value="<?php echo (int) $settings['max_per_run']; ?>" class="small-text" />
+							</p>
+							<p class="dzen-field">
+								<label for="dzen-backfill-batch">Догрузка старых:</label>
+								<input type="number" id="dzen-backfill-batch" min="1" max="50" name="backfill_batch"
+									value="<?php echo (int) $settings['backfill_batch']; ?>" class="small-text" />
+							</p>
 						</td>
 					</tr>
 				</table>

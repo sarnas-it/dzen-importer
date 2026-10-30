@@ -13,6 +13,21 @@
 	color: #b32d2e;
 }
 
+.dzen-importer .dzen-field {
+	margin: 0 0 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.dzen-importer .dzen-field label {
+	min-width: 140px;
+}
+
+.dzen-importer .dzen-field input[type="number"] {
+	margin: 0;
+}
+
 .dzen-importer .dzen-log td {
 	vertical-align: top;
 }
