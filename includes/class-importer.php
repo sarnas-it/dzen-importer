@@ -377,6 +377,7 @@ class Importer {
 					self::META_IMPORTED => time(),
 					'_dzen_media_type'  => 'video',
 					'_dzen_duration'    => isset( $video['duration'] ) ? (int) $video['duration'] : 0,
+					'_dzen_embed_id'    => isset( $video['embed_id'] ) ? (string) $video['embed_id'] : '',
 					'_dzen_published_at' => (int) $item['ts'],
 				),
 			),
@@ -439,14 +440,11 @@ class Importer {
 		$parts = array();
 
 		if ( '' !== $video_url ) {
-			$poster = '' !== $cover_url ? ' poster="' . esc_url( $cover_url ) . '"' : '';
-			$parts[] = '<figure class="wp-block-video"><video controls preload="metadata"' . $poster . '>'
-				. '<source src="' . esc_url( $video_url ) . '" type="video/mp4" /></video></figure>';
+			$parts[] = '[dzen_video src="' . esc_url( $video_url ) . '" poster="' . esc_url( $cover_url ) . '"]';
 		} elseif ( ! empty( $video['embed_id'] ) ) {
-			$parts[] = '<figure class="wp-block-embed is-type-video is-provider-dzen"><div class="wp-block-embed__wrapper">'
-				. '<iframe src="https://dzen.ru/embed/' . esc_attr( $video['embed_id'] ) . '" width="640" height="360"'
-				. ' frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>'
-				. '</div></figure>';
+			// Шорткод, а не готовый iframe: WordPress вырезает iframe у записей,
+			// созданных без пользователя (крон), если у него нет unfiltered_html.
+			$parts[] = '[dzen_video id="' . esc_attr( $video['embed_id'] ) . '"]';
 		}
 
 		if ( '' !== $desc ) {
