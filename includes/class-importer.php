@@ -358,7 +358,9 @@ class Importer {
 
 		$content = self::build_video_content( $item, $settings, $desc, $video, $cover_url, $video_url );
 
-		$date_ts = ( isset( $settings['video_date'] ) && 'original' === $settings['video_date'] ) ? (int) $item['ts'] : time();
+		$date_ts = ( isset( $settings['video_date'] ) && 'original' === $settings['video_date'] && (int) $item['ts'] > 0 )
+			? (int) $item['ts']
+			: time();
 
 		$post_id = wp_insert_post(
 			array(

@@ -527,11 +527,11 @@ class Admin {
 							<p class="dzen-field">
 								<label for="dzen-video-date">Дата видео:</label>
 								<select id="dzen-video-date" name="video_date">
-									<option value="import" <?php selected( $settings['video_date'], 'import' ); ?>>дата импорта (сразу видно в блоге)</option>
-									<option value="original" <?php selected( $settings['video_date'], 'original' ); ?>>оригинальная дата Дзена</option>
+									<option value="original" <?php selected( $settings['video_date'], 'original' ); ?>>оригинальная дата Дзена (новые сверху)</option>
+									<option value="import" <?php selected( $settings['video_date'], 'import' ); ?>>дата импорта</option>
 								</select>
 							</p>
-							<p class="description">У видео на Дзене даты старые (год и больше назад), поэтому с оригинальной датой они уходят в архив и не видны в списке новых материалов.</p>
+							<p class="description">С оригинальной датой ролики стоят в правильном порядке: свежие наверху. Дата импорта ставит все загруженные подряд.</p>
 						</td>
 					</tr>
 					<tr>
